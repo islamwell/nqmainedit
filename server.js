@@ -28,14 +28,39 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// ---------- CORS for Bookmarklet (allows editing live nurulquran.com pages) ----------
+const ALLOWED_ORIGINS = new Set([
+  'https://nurulquran.com',
+  'https://www.nurulquran.com',
+  'https://fast.nurulquran.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+]);
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// When serving cross-origin (bookmarklet), cookies need sameSite=none + secure=true.
+// In local dev (COOKIE_SECURE=0) we use sameSite=lax so it still works on localhost.
+const cookieSecure = process.env.COOKIE_SECURE === '1';
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.COOKIE_SECURE === '1',
+    sameSite: cookieSecure ? 'none' : 'lax',
+    secure: cookieSecure,
     maxAge: 8 * 3600e3 // 8 hours
   },
 }));
@@ -89,7 +114,7 @@ app.get('/api/me', (req, res) => {
     user: req.session.user,
     siteUrl: process.env.SITE_URL || '',
     base: BASE,
-    version: 'v1.0.2'
+    version: 'v1.0.3'
   });
 });
 

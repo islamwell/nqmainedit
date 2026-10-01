@@ -148,7 +148,7 @@ $('#publishBtn').onclick = async e => {
 };
 
 // ---------- Router ----------
-const VIEWS = { dashboard, lectures, courses, pages, audio: audioView };
+const VIEWS = { dashboard, lectures, courses, pages, audio: audioView, bookmarklet: bookmarkletView };
 
 $$('aside nav a').forEach(a => (a.href = '#' + a.dataset.view));
 window.onhashchange = route;
@@ -898,6 +898,84 @@ function audioView() {
       }
     };
   });
+}
+
+// ---------- Bookmarklet / Live Site Editor View ----------
+function bookmarkletView() {
+  const origin = location.origin; // e.g. http://localhost:3000
+  const bookmarkletCode = `javascript:(function(){var s=document.createElement('script');s.src='${origin}/admin/inpage.js?t='+Date.now();document.head.appendChild(s)})();`;
+
+  $('#main').innerHTML = `
+    <div class="list-header"><h2>🔖 Live Site Editor (Bookmarklet)</h2></div>
+    <div style="max-width:700px; padding:0 24px 40px;">
+      <div style="background:#f0fdf4; border:2px solid #86efac; border-radius:12px; padding:20px 24px; margin-bottom:28px;">
+        <h3 style="margin:0 0 8px; color:#15803d;">✅ The easiest and most reliable way to edit nurulquran.com</h3>
+        <p style="margin:0; color:#166534; font-size:14px; line-height:1.6;">
+          Click the bookmarklet while viewing <strong>fast.nurulquran.com</strong> (or nurulquran.com) in your browser.
+          The real page loads with all its theme, fonts, and assets exactly as visitors see it —
+          then the NurulQuran editor bar appears at the top so you can click to edit directly.
+        </p>
+      </div>
+
+      <h3 style="margin:0 0 12px;">Step 1 — Make sure the admin server is running</h3>
+      <p style="color:#6b7280; font-size:14px; margin:0 0 20px;">
+        The admin server must be running on your computer at <code>${origin}</code>.<br>
+        Start it with <code>npm start</code> in the project folder.
+      </p>
+
+      <h3 style="margin:0 0 12px;">Step 2 — Add the bookmarklet to your browser</h3>
+      <p style="color:#6b7280; font-size:14px; margin:0 0 12px;">
+        Drag the green button below to your browser's bookmarks bar:
+      </p>
+      <div style="margin:0 0 16px;">
+        <a id="nq-bookmarklet-link" href="${esc(bookmarkletCode)}"
+          style="display:inline-block; background:#0f4c3a; color:#fff; padding:10px 20px; border-radius:8px;
+                 font-weight:700; font-size:15px; text-decoration:none; cursor:grab; user-select:none;
+                 box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+          📖 NQ Edit Page
+        </a>
+      </div>
+      <p style="color:#9ca3af; font-size:13px; margin:0 0 8px;">
+        <strong>Can't drag it?</strong> Right-click the button → "Bookmark this link" → Save it to your bookmarks bar.
+      </p>
+      <details style="margin-bottom:24px;">
+        <summary style="cursor:pointer; font-size:13px; color:#6b7280;">Show raw bookmarklet code (for manual copy)</summary>
+        <textarea readonly style="width:100%;height:80px;margin-top:8px;font-size:11px;font-family:monospace;
+                  border:1px solid #d1d5db; border-radius:6px; padding:8px; resize:none;"
+          onclick="this.select()">${esc(bookmarkletCode)}</textarea>
+      </details>
+
+      <h3 style="margin:0 0 12px;">Step 3 — Edit the live site</h3>
+      <ol style="color:#374151; font-size:14px; line-height:2; padding-left:20px; margin:0 0 24px;">
+        <li>Open <a href="https://fast.nurulquran.com" target="_blank" style="color:#0f4c3a;">fast.nurulquran.com</a> in your browser</li>
+        <li>Click <strong>📖 NQ Edit Page</strong> in your bookmarks bar</li>
+        <li>A green admin bar appears at the top of the page</li>
+        <li>Click <strong>✏️ Edit This Page</strong> to enable editing</li>
+        <li>Click any heading, paragraph, or section directly to edit it</li>
+        <li>Click <strong>💾 Save Changes</strong> — the HTML is saved to your local <code>site/</code> folder</li>
+        <li>Click <strong>🚀 Publish</strong> to push changes live to Cloudflare Pages</li>
+      </ol>
+
+      <div style="background:#fef3c7; border:1px solid #fcd34d; border-radius:8px; padding:16px 20px; margin-bottom:24px;">
+        <strong>⚠️ Sign in first!</strong><br>
+        <span style="font-size:13px; color:#92400e; line-height:1.6;">
+          Before using the bookmarklet, sign in to this admin panel here at <a href="${origin}/admin/" target="_blank">${origin}/admin/</a>.
+          Your session is shared automatically when the bookmarklet runs.
+          If the green bar shows "Guest Mode", return here, sign in, then click the bookmarklet again.
+        </span>
+      </div>
+
+      <h3 style="margin:0 0 8px;">How it works (technical)</h3>
+      <p style="color:#6b7280; font-size:13px; line-height:1.6; margin:0;">
+        The bookmarklet injects <code>/admin/inpage.js</code> from <code>${origin}</code> into the tab.
+        All API calls (auth check, save, publish) go to <code>${origin}/api/…</code> using
+        <code>credentials: 'include'</code>. CORS is pre-configured on the admin server to allow
+        requests from <strong>nurulquran.com</strong> and <strong>fast.nurulquran.com</strong>.
+        Saved HTML is written to your local <code>site/</code> folder, then deployed via
+        the Publish button (runs the configured deploy command, e.g. <code>wrangler pages deploy</code>).
+      </p>
+    </div>
+  `;
 }
 
 // Start application

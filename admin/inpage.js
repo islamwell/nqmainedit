@@ -1,9 +1,39 @@
 /* ==========================================================================
    NQ In-Page Editor Script (NurulQuran WYSIWYG & Admin Bar)
+   Works both embedded in local site/index.html AND injected via bookmarklet
+   into fast.nurulquran.com or nurulquran.com.
    ========================================================================== */
 (function() {
   if (window.__NQ_INPAGE_EDITOR_LOADED__) return;
   window.__NQ_INPAGE_EDITOR_LOADED__ = true;
+
+  // Auto-detect where the admin server is.
+  // When injected via bookmarklet into the live site, this script's src will be
+  // http://localhost:3000/admin/inpage.js — so we extract the origin from it.
+  // Fall back to same-origin if loaded as part of the local site.
+  const ADMIN_BASE = (function() {
+    try {
+      const scripts = document.querySelectorAll('script[src]');
+      for (const s of scripts) {
+        const url = new URL(s.src, location.href);
+        if (url.pathname.includes('inpage.js') && url.hostname !== location.hostname) {
+          return url.origin; // e.g. "http://localhost:3000"
+        }
+      }
+    } catch(e) {}
+    return ''; // same-origin
+  })();
+
+  const IS_CROSS_ORIGIN = Boolean(ADMIN_BASE);
+
+  // Fetch wrapper: always sends credentials, routes to admin server when cross-origin
+  function apiFetch(path, opts = {}) {
+    return fetch(ADMIN_BASE + path, {
+      ...opts,
+      credentials: 'include',
+      headers: opts.headers || (opts.body ? { 'Content-Type': 'application/json' } : {}),
+    });
+  }
 
   let sessionUser = null;
   let isEditing = false;
@@ -258,9 +288,10 @@
   // Admin Top Bar
   const bar = document.createElement('div');
   bar.id = 'nq-admin-bar';
+  const adminUrl = ADMIN_BASE + '/admin/';
   bar.innerHTML = `
     <div style="display:flex; align-items:center; gap:16px;">
-      <a href="/admin/#dashboard" class="nq-bar-brand" target="_blank">📖 NurulQuran Admin</a>
+      <a href="${adminUrl}#dashboard" class="nq-bar-brand" target="_blank">📖 NurulQuran Admin</a>
       <span id="nq-bar-status" style="color:#d1fae5; font-size:12px;">Checking sign-in...</span>
     </div>
     <div class="nq-bar-actions" id="nq-bar-actions">
@@ -272,7 +303,7 @@
   // Check auth session
   async function checkAuth() {
     try {
-      const res = await fetch('/api/me');
+      const res = await apiFetch('/api/me');
       if (res.ok) {
         const data = await res.json();
         sessionUser = data.user;
@@ -288,7 +319,7 @@
   function renderLoggedOutBar() {
     document.getElementById('nq-bar-status').textContent = 'Guest Mode';
     document.getElementById('nq-bar-actions').innerHTML = `
-      <a href="/admin/#dashboard" class="nq-bar-btn nq-btn-primary" target="_blank">Sign in to Edit</a>
+      <a href="${adminUrl}#dashboard" class="nq-bar-btn nq-btn-primary" target="_blank">Sign in to Edit</a>
     `;
   }
 
@@ -305,7 +336,7 @@
         <button class="nq-bar-btn nq-btn-primary" id="nq-btn-toggle-edit">✏️ Edit This Page</button>
         <button class="nq-bar-btn" id="nq-btn-new-item">➕ New Item / Page</button>
         <button class="nq-bar-btn" id="nq-btn-publish-site">🚀 Publish</button>
-        <a href="/admin/#dashboard" class="nq-bar-btn" target="_blank">Admin Panel</a>
+        <a href="${adminUrl}#dashboard" class="nq-bar-btn" target="_blank">Admin Panel</a>
       `;
     } else {
       actions.innerHTML = `
@@ -344,7 +375,7 @@
         pubBtn.disabled = true;
         pubBtn.textContent = 'Publishing...';
         try {
-          const res = await fetch('/api/publish', { method: 'POST' });
+          const res = await apiFetch('/api/publish', { method: 'POST' });
           const d = await res.json();
           showToast(d.message || 'Published successfully!');
         } catch (e) {
@@ -467,13 +498,9 @@
     const fullHtml = '<!doctype html>\n' + clone.outerHTML;
 
     try {
-      const res = await fetch('/api/inpage/save', {
+      const res = await apiFetch('/api/inpage/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          path: relPath,
-          html: fullHtml
-        })
+        body: JSON.stringify({ path: relPath, html: fullHtml })
       });
 
       const d = await res.json();
@@ -518,9 +545,8 @@
 
       try {
         if (type === 'page') {
-          const res = await fetch('/api/pages', {
+          const res = await apiFetch('/api/pages', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               title,
               slug,
@@ -531,13 +557,15 @@
           const d = await res.json();
           if (!res.ok) throw new Error(d.error || 'Creation failed');
           modal.style.display = 'none';
-          showToast('Page created! Redirecting...');
+          showToast('Page created! Open the admin panel to view it.');
+          // When cross-origin we can't navigate to the new page on a different domain,
+          // so just open the admin panel instead.
           setTimeout(() => {
-            window.location.href = `/${d.item.slug}/`;
+            window.open(ADMIN_BASE + '/admin/#pages', '_blank');
           }, 800);
         } else {
           // Open standard admin panel for complex types
-          window.open(`/admin/#${type}s`, '_blank');
+          window.open(`${adminUrl}#${type}s`, '_blank');
           modal.style.display = 'none';
         }
       } catch (err) {
