@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NurulQuran – Free Islamic Audio Lectures & Courses</title>
+  <meta name="description" content="Welcome to NurulQuran, providing Islamic audio lectures, Quranic studies, and courses.">
+  <style>
+    :root {
+      --nq-primary: #0f4c3a;
+      --nq-primary-light: #138a63;
+      --nq-bg: #f9fbf9;
+      --nq-card-bg: #ffffff;
+      --nq-text: #212529;
+      --nq-text-muted: #667085;
+      --nq-border: #e4e7ec;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--nq-bg);
+      color: var(--nq-text);
+      line-height: 1.7;
+    }
+    .nq-header {
+      background: var(--nq-primary);
+      color: #ffffff;
+      padding: 18px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .nq-header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .nq-brand {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nq-menu {
+      display: flex;
+      gap: 16px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .nq-menu a {
+      color: #d1fae5;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+    .nq-menu a:hover {
+      color: #ffffff;
+    }
+    .nq-wrap {
+      max-width: 960px;
+      margin: 36px auto;
+      padding: 0 20px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f4c3a 0%, #17634d 100%);
+      color: #ffffff;
+      padding: 48px 36px;
+      border-radius: 16px;
+      text-align: center;
+      margin-bottom: 36px;
+      box-shadow: 0 4px 20px rgba(15, 76, 58, 0.15);
+    }
+    .hero h1 {
+      font-size: 2.4rem;
+      margin: 0 0 16px;
+      color: #ffffff;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      max-width: 650px;
+      margin: 0 auto 24px;
+      color: #d1fae5;
+    }
+    .hero-btn {
+      display: inline-block;
+      background: #ffffff;
+      color: #0f4c3a;
+      font-weight: 700;
+      padding: 12px 28px;
+      border-radius: 99px;
+      text-decoration: none;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .hero-btn:hover {
+      background: #f0fdf4;
+      transform: translateY(-1px);
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--nq-card-bg);
+      border: 1px solid var(--nq-border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.25rem;
+      color: var(--nq-primary);
+    }
+    .card a {
+      color: var(--nq-primary-light);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .card a:hover {
+      text-decoration: underline;
+    }
+    .nq-site-footer {
+      background: #111827;
+      color: #9ca3af;
+      padding: 32px 20px;
+      margin-top: 60px;
+      font-size: 0.9rem;
+      border-top: 1px solid #1f2937;
+    }
+    .nq-footer-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .nq-version {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <header class="nq-header">
+    <div class="nq-header-inner">
+      <a href="/" class="nq-brand">📖 NurulQuran</a>
+      <ul class="nq-menu">
+        <li><a href="/">Home</a></li>
+        <li><a href="/lectures/">Lectures</a></li>
+        <li><a href="/about/">About</a></li>
+        <li><a href="/admin/">Admin</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="nq-wrap">
+    <div class="hero">
+      <h1>NurulQuran Audio Library</h1>
+      <p>Explore hundreds of comprehensive Quranic commentaries, lectures, and Ramadan series.</p>
+      <a href="/lectures/" class="hero-btn">Browse All Lectures →</a>
+    </div>
+
+    <div class="features">
+      <div class="card">
+        <h2>🎧 Audio Lectures</h2>
+        <p>Listen online with responsive audio playback or download high-quality MP3s for offline listening.</p>
+        <a href="/lectures/">Listen Now →</a>
+      </div>
+      <div class="card">
+        <h2>📚 Structured Courses</h2>
+        <p>Browse courses organized chronologically by year with sequential lesson numbers.</p>
+        <a href="/lectures/">View Courses →</a>
+      </div>
+      <div class="card">
+        <h2>⚡ Static & Cloudflare-Ready</h2>
+        <p>Fast, secure, and hosted on Cloudflare Pages without heavy dynamic backend requirements.</p>
+        <a href="/admin/">Manage Content →</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="nq-site-footer">
+    <div class="nq-footer-inner">
+      <div>&copy; NurulQuran. All rights reserved.</div>
+      <div class="nq-version">v1.0.0 (updated 2026-10-01 14:57)</div>
+    </div>
+  </footer>
+</body>
+</html>

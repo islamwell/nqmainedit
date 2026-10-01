@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NurulQuran Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="login" class="login hidden">
+    <form id="loginForm" class="card">
+      <div class="card-brand">📖 NurulQuran Admin</div>
+      <p class="card-subtitle">Sign in to manage pages, courses, and audio lectures.</p>
+      <label>
+        Username
+        <input name="username" required autocomplete="username" autofocus>
+      </label>
+      <label>
+        Password
+        <input name="password" type="password" required autocomplete="current-password">
+      </label>
+      <button class="btn primary" style="width:100%; margin-top: 10px;">Sign in</button>
+      <p class="err" id="loginErr"></p>
+      <div class="login-version">v1.0.0 (updated 2026-10-01 14:57)</div>
+    </form>
+  </div>
+
+  <!-- Main Admin App -->
+  <div id="app" class="hidden">
+    <aside>
+      <div class="brand">📖 NurulQuran</div>
+      <nav>
+        <a data-view="dashboard">🏠 Dashboard</a>
+        <a data-view="lectures">🎧 Lectures</a>
+        <a data-view="courses">📚 Courses</a>
+        <a data-view="pages">📄 Pages</a>
+        <a data-view="audio">🎵 Audio Library</a>
+      </nav>
+      <div class="side-bottom">
+        <button id="publishBtn" class="btn primary">🚀 Publish</button>
+        <button id="logoutBtn" class="btn">Sign out</button>
+        <div class="admin-version">v1.0.0 (updated 2026-10-01 14:57)</div>
+      </div>
+    </aside>
+
+    <main id="main"></main>
+  </div>
+
+  <!-- Reusable Modal Window -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-box" id="modalBody"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "pages": [
+    {
+      "id": "page-contact",
+      "title": "Contact Us",
+      "slug": "contact",
+      "description": "Get in touch with the NurulQuran team",
+      "content": "<p>Assalamu alaikum wa rahmatullahi wa barakatuh.</p><p>For inquiries regarding courses, admissions, or technical support, please reach out to us at <strong>info@nurulquran.com</strong>.</p>",
+      "published": true,
+      "createdAt": "2026-10-01T10:00:00.000Z"
+    }
+  ],
+  "courses": [
+    {
+      "id": "course-baqarah-2026",
+      "title": "Tafseer Surah Al-Baqarah",
+      "year": 2026,
+      "description": "Comprehensive verse-by-verse commentary and explanation of Surah Al-Baqarah.",
+      "order": 1,
+      "slug": "tafseer-surah-al-baqarah",
+      "published": true,
+      "createdAt": "2026-10-01T10:00:00.000Z"
+    }
+  ],
+  "lectures": [
+    {
+      "id": "lec-baqarah-01",
+      "courseId": "course-baqarah-2026",
+      "title": "01 Introduction & Verses 1 to 5",
+      "number": 1,
+      "speaker": "Dr. Idrees Zubair",
+      "date": "2026-10-01",
+      "description": "Virtues of Surah Al-Baqarah, Muttaqeen characteristics, and the opening guidance of the Quran.",
+      "audioId": "",
+      "audioUrl": "https://traffic.libsyn.com/nurulquran/sample-lecture.mp3",
+      "slug": "01-introduction-verses-1-to-5",
+      "published": true,
+      "createdAt": "2026-10-01T10:05:00.000Z"
+    }
+  ],
+  "audio": []
+}
