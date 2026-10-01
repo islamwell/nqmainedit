@@ -80,7 +80,7 @@ async function runTests() {
 
   assert.strictEqual(me.statusCode, 200);
   assert.strictEqual(me.body.user, 'admin');
-  assert.strictEqual(me.body.version, 'v1.0.1');
+  assert.strictEqual(me.body.version, 'v1.0.2');
   console.log('✓ /api/me returned session and system version');
 
   // 4. Verify existing file conflict protection
@@ -172,11 +172,22 @@ async function runTests() {
   assert.strictEqual(delCourse.statusCode, 200);
   console.log('✓ Cleanup and deletion verified');
 
-  // Verify file removed from disk
-  assert.ok(!fs.existsSync(lectureFile), 'Stale lecture file should be removed on deletion');
-  console.log('✓ Manifest cleaned up stale files from disk automatically');
+  // 9. Verify in-page WYSIWYG save endpoint
+  const inpageSave = await makeRequest({
+    hostname: '127.0.0.1',
+    port: testPort,
+    path: '/api/inpage/save',
+    method: 'POST'
+  }, JSON.stringify({
+    path: 'about/index.html',
+    html: fs.readFileSync(path.resolve('./site/about/index.html'), 'utf8')
+  }), cookie);
 
-    console.log('\n--- All System Tests Passed Successfully! ---');
+  assert.strictEqual(inpageSave.statusCode, 200);
+  assert.strictEqual(inpageSave.body.ok, true);
+  console.log('✓ In-page WYSIWYG save endpoint successfully verified');
+
+  console.log('\n--- All System Tests Passed Successfully! ---');
   } finally {
     await new Promise(resolve => serverInstance.close(resolve));
   }

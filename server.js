@@ -89,7 +89,7 @@ app.get('/api/me', (req, res) => {
     user: req.session.user,
     siteUrl: process.env.SITE_URL || '',
     base: BASE,
-    version: 'v1.0.1'
+    version: 'v1.0.2'
   });
 });
 
@@ -311,6 +311,49 @@ app.delete('/api/:col/:id', guard, h(async (req, res) => {
   db.save(data);
   const buildResult = rebuild(data);
   res.json({ ok: true, ...buildResult });
+}));
+
+// ---------- In-Page WYSIWYG Direct HTML Save ----------
+app.post('/api/inpage/save', h(async (req, res) => {
+  const { path: relPath, html } = req.body || {};
+  if (!relPath || !html) throw new Error('Path and HTML content are required');
+
+  const safeRelPath = path.normalize(relPath).replace(/^(\.\.[\/\\])+/, '');
+  const targetFile = path.join(SITE_DIR, safeRelPath);
+
+  // Safety: Prevent writing outside SITE_DIR
+  if (!targetFile.startsWith(SITE_DIR)) {
+    throw new Error('Invalid target path');
+  }
+
+  // Backup existing file if present
+  if (fs.existsSync(targetFile)) {
+    const backupDir = path.join(path.dirname(process.env.DATA_FILE || './data/db.json'), 'backups', 'pages');
+    fs.mkdirSync(backupDir, { recursive: true });
+    const backupName = `${safeRelPath.replace(/[\/\\]/g, '_')}-${Date.now()}.html`;
+    try {
+      fs.copyFileSync(targetFile, path.join(backupDir, backupName));
+    } catch {}
+  }
+
+  // Write new content to disk
+  fs.mkdirSync(path.dirname(targetFile), { recursive: true });
+  fs.writeFileSync(targetFile, html, 'utf8');
+
+  // If this file matches a slug in db.pages, sync its content property as well
+  const data = db.load();
+  const slug = safeRelPath.replace(/\/index\.html$/, '').replace(/\.html$/, '');
+  const page = (data.pages || []).find(p => p.slug === slug);
+  if (page) {
+    // Extract main or article content if found
+    const match = html.match(/<article[\s\S]*?<\/article>/i) || html.match(/<main[\s\S]*?<\/main>/i);
+    if (match) {
+      page.content = match[0];
+      db.save(data);
+    }
+  }
+
+  res.json({ ok: true, file: safeRelPath });
 }));
 
 // ---------- Publish Action ----------
