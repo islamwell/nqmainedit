@@ -36,13 +36,20 @@ function makeRequest(options, postData = null, cookie = '') {
 async function runTests() {
   console.log('--- Starting Automated System Verification ---');
 
-  // 1. Verify Login with invalid credentials
-  const badLogin = await makeRequest({
-    hostname: '127.0.0.1',
-    port: 3000,
-    path: '/api/login',
-    method: 'POST'
-  }, JSON.stringify({ username: 'admin', password: 'wrongpassword' }));
+  const { app } = require('./server');
+  const testPort = 3001;
+  const serverInstance = await new Promise((resolve) => {
+    const s = app.listen(testPort, () => resolve(s));
+  });
+
+  try {
+    // 1. Verify Login with invalid credentials
+    const badLogin = await makeRequest({
+      hostname: '127.0.0.1',
+      port: testPort,
+      path: '/api/login',
+      method: 'POST'
+    }, JSON.stringify({ username: 'admin', password: 'wrongpassword' }));
   
   assert.strictEqual(badLogin.statusCode, 401, 'Bad login should return 401');
   console.log('✓ Invalid login correctly rejected with 401');
@@ -50,7 +57,7 @@ async function runTests() {
   // 2. Verify Login with correct credentials
   const goodLogin = await makeRequest({
     hostname: '127.0.0.1',
-    port: 3000,
+    port: testPort,
     path: '/api/login',
     method: 'POST'
   }, JSON.stringify({ username: 'admin', password: 'admin123' }));
@@ -66,20 +73,20 @@ async function runTests() {
   // 3. Verify /api/me
   const me = await makeRequest({
     hostname: '127.0.0.1',
-    port: 3000,
+    port: testPort,
     path: '/api/me',
     method: 'GET'
   }, null, cookie);
 
   assert.strictEqual(me.statusCode, 200);
   assert.strictEqual(me.body.user, 'admin');
-  assert.strictEqual(me.body.version, 'v1.0.0');
+  assert.strictEqual(me.body.version, 'v1.0.1');
   console.log('✓ /api/me returned session and system version');
 
   // 4. Verify existing file conflict protection
   const conflictPage = await makeRequest({
     hostname: '127.0.0.1',
-    port: 3000,
+    port: testPort,
     path: '/api/pages',
     method: 'POST'
   }, JSON.stringify({
@@ -95,7 +102,7 @@ async function runTests() {
   // 5. Create a new Course
   const newCourse = await makeRequest({
     hostname: '127.0.0.1',
-    port: 3000,
+    port: testPort,
     path: '/api/courses',
     method: 'POST'
   }, JSON.stringify({
@@ -112,7 +119,7 @@ async function runTests() {
   // 6. Create a Lecture for this Course
   const newLecture = await makeRequest({
     hostname: '127.0.0.1',
-    port: 3000,
+    port: testPort,
     path: '/api/lectures',
     method: 'POST'
   }, JSON.stringify({
@@ -138,7 +145,7 @@ async function runTests() {
   // 7. Verify course deletion protection when lectures exist
   const deleteCourseFail = await makeRequest({
     hostname: '127.0.0.1',
-    port: 3000,
+    port: testPort,
     path: `/api/courses/${courseId}`,
     method: 'DELETE'
   }, null, cookie);
@@ -150,7 +157,7 @@ async function runTests() {
   // 8. Delete lecture then course
   const delLec = await makeRequest({
     hostname: '127.0.0.1',
-    port: 3000,
+    port: testPort,
     path: `/api/lectures/${lectureId}`,
     method: 'DELETE'
   }, null, cookie);
@@ -158,7 +165,7 @@ async function runTests() {
 
   const delCourse = await makeRequest({
     hostname: '127.0.0.1',
-    port: 3000,
+    port: testPort,
     path: `/api/courses/${courseId}`,
     method: 'DELETE'
   }, null, cookie);
@@ -169,7 +176,10 @@ async function runTests() {
   assert.ok(!fs.existsSync(lectureFile), 'Stale lecture file should be removed on deletion');
   console.log('✓ Manifest cleaned up stale files from disk automatically');
 
-  console.log('\n--- All System Tests Passed Successfully! ---');
+    console.log('\n--- All System Tests Passed Successfully! ---');
+  } finally {
+    await new Promise(resolve => serverInstance.close(resolve));
+  }
 }
 
 // If run directly

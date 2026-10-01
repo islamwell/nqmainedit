@@ -89,7 +89,7 @@ app.get('/api/me', (req, res) => {
     user: req.session.user,
     siteUrl: process.env.SITE_URL || '',
     base: BASE,
-    version: 'v1.0.0'
+    version: 'v1.0.1'
   });
 });
 
@@ -356,9 +356,14 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n===========================================`);
-  console.log(`NurulQuran Admin running at: http://localhost:${PORT}/admin/`);
-  console.log(`Static site directory: ${SITE_DIR}`);
-  console.log(`===========================================\n`);
-});
+let server = null;
+if (require.main === module) {
+  server = app.listen(PORT, () => {
+    console.log(`\n===========================================`);
+    console.log(`NurulQuran Admin running at: http://localhost:${PORT}/admin/`);
+    console.log(`Static site directory: ${SITE_DIR}`);
+    console.log(`===========================================\n`);
+  });
+}
+
+module.exports = { app, server };

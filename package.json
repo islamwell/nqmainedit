@@ -1,6 +1,6 @@
 {
   "name": "nq-admin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Static website editor and lecture manager for nurulquran.com",
   "scripts": {
@@ -8,7 +8,7 @@
     "hash": "node -e \"console.log(require('bcryptjs').hashSync(process.argv[1], 12))\"",
     "build": "node -e \"const db=require('./lib/db'); const {buildAll}=require('./lib/build'); buildAll(db.load(), {siteDir: require('path').resolve(process.env.SITE_DIR || './site'), base: process.env.LECTURES_BASE || 'lectures'}); console.log('✓ Site built successfully');\"",
     "test": "node test_system.js",
-    "deploy:pages": "wrangler pages deploy ./site --project-name=nurulquran"
+    "deploy:pages": "wrangler pages deploy ./site --project-name=nqmainedit --branch=main"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
