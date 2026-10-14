@@ -80,7 +80,7 @@ async function runTests() {
 
   assert.strictEqual(me.statusCode, 200);
   assert.strictEqual(me.body.user, 'admin');
-  assert.strictEqual(me.body.version, 'v1.0.2');
+  assert.strictEqual(me.body.version, 'v1.0.4');
   console.log('✓ /api/me returned session and system version');
 
   // 4. Verify existing file conflict protection
@@ -186,6 +186,33 @@ async function runTests() {
   assert.strictEqual(inpageSave.statusCode, 200);
   assert.strictEqual(inpageSave.body.ok, true);
   console.log('✓ In-page WYSIWYG save endpoint successfully verified');
+
+  // 10. Verify Bunny CDN status & config
+  const bunnyStatus = await makeRequest({
+    hostname: '127.0.0.1',
+    port: testPort,
+    path: '/api/bunny/status',
+    method: 'GET'
+  }, null, cookie);
+
+  assert.strictEqual(bunnyStatus.statusCode, 200);
+  assert.strictEqual(typeof bunnyStatus.body.configured, 'boolean');
+  console.log('✓ Bunny CDN status endpoint verified');
+
+  const bunnyConfig = await makeRequest({
+    hostname: '127.0.0.1',
+    port: testPort,
+    path: '/api/bunny/config',
+    method: 'POST'
+  }, JSON.stringify({
+    storageZone: 'nurulquran-test',
+    cdnUrl: 'https://audio.nurulquran.com'
+  }), cookie);
+
+  assert.strictEqual(bunnyConfig.statusCode, 200);
+  assert.strictEqual(bunnyConfig.body.ok, true);
+  assert.strictEqual(bunnyConfig.body.config.storageZone, 'nurulquran-test');
+  console.log('✓ Bunny CDN config update endpoint verified');
 
   console.log('\n--- All System Tests Passed Successfully! ---');
   } finally {

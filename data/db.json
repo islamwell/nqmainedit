@@ -38,5 +38,9 @@
       "createdAt": "2026-10-01T10:05:00.000Z"
     }
   ],
-  "audio": []
+  "audio": [],
+  "bunny": {
+    "storageZone": "nurulquran-test",
+    "cdnUrl": "https://audio.nurulquran.com"
+  }
 }

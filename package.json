@@ -1,6 +1,6 @@
 {
   "name": "nq-admin",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "private": true,
   "description": "Static website editor and lecture manager for nurulquran.com",
   "scripts": {
