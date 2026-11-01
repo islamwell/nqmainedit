@@ -1,6 +1,6 @@
 /* ==========================================================================
    NQ In-Page Editor Script (NurulQuran Real WYSIWYG, Menu Manager & Bunny CDN)
-   Version: v1.0.4
+   Version: v1.0.5
    Works embedded in local site pages AND injected via bookmarklet into
    live WordPress exports (fast.nurulquran.com / nurulquran.com).
    ========================================================================== */
@@ -17,10 +17,16 @@
       for (const s of scripts) {
         const url = new URL(s.src, location.href);
         if (url.pathname.includes('inpage.js') && url.hostname !== location.hostname) {
-          return url.origin; // e.g. "http://localhost:3000"
+          const origin = url.origin;
+          try { localStorage.setItem('nq_admin_url', origin); } catch {}
+          return origin; // e.g. "http://localhost:3000"
         }
       }
     } catch (e) {}
+    try {
+      const stored = localStorage.getItem('nq_admin_url');
+      if (stored) return stored;
+    } catch {}
     if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
       return 'http://localhost:3000';
     }
@@ -153,6 +159,11 @@
 
     body.nq-has-admin-bar {
       padding-top: 46px !important;
+    }
+    body.nq-has-admin-bar header.fixed,
+    body.nq-has-admin-bar .navbar-fixed-top,
+    body.nq-has-admin-bar .main-header-fixed {
+      top: 46px !important;
     }
 
     /* Editable Element Highlighting */
@@ -738,6 +749,23 @@
   `;
   document.body.appendChild(bar);
 
+  function adjustFixedHeaders(offset) {
+    document.querySelectorAll('header, nav, .fixed-top, #main-header, .header-wrap, #header').forEach(h => {
+      try {
+        const cs = window.getComputedStyle(h);
+        if (cs.position === 'fixed' && (cs.top === '0px' || cs.top === '0' || h.dataset.nqOrigTop)) {
+          if (!h.dataset.nqOrigTop) h.dataset.nqOrigTop = h.style.top || '';
+          if (offset) {
+            h.style.top = offset;
+          } else {
+            h.style.top = h.dataset.nqOrigTop;
+            delete h.dataset.nqOrigTop;
+          }
+        }
+      } catch (e) {}
+    });
+  }
+
   // Check auth session
   async function checkAuth() {
     try {
@@ -754,11 +782,30 @@
         renderLoggedOutBar();
       }
     } catch (err) {
-      renderLoggedOutBar();
+      renderServerErrorBar(err);
     }
   }
 
+  function renderServerErrorBar(err) {
+    const targetOrigin = ADMIN_BASE || 'http://localhost:3000';
+    document.body.classList.add('nq-has-admin-bar');
+    adjustFixedHeaders('46px');
+    document.getElementById('nq-bar-status').innerHTML = `<span style="color:#fca5a5; font-weight:700;">⚠️ Admin Server Offline (${targetOrigin})</span>`;
+    document.getElementById('nq-bar-actions').innerHTML = `
+      <span style="font-size:12px; color:#fde68a;">Start server with "npm start" in terminal</span>
+      <button class="nq-btn nq-btn-primary" id="nq-btn-retry-auth">🔄 Retry</button>
+      <a href="${adminUrl}#login" class="nq-btn" target="_blank">Open Admin</a>
+    `;
+    const retryBtn = document.getElementById('nq-btn-retry-auth');
+    if (retryBtn) retryBtn.onclick = () => {
+      document.getElementById('nq-bar-status').textContent = 'Connecting...';
+      checkAuth();
+    };
+  }
+
   function renderLoggedOutBar() {
+    document.body.classList.add('nq-has-admin-bar');
+    adjustFixedHeaders('46px');
     document.getElementById('nq-bar-status').textContent = 'Guest Mode';
     document.getElementById('nq-bar-actions').innerHTML = `
       <a href="${adminUrl}#login" class="nq-btn nq-btn-primary" target="_blank">Sign in to Edit</a>
@@ -767,6 +814,7 @@
 
   function renderLoggedInBar() {
     document.body.classList.add('nq-has-admin-bar');
+    adjustFixedHeaders('46px');
     const bunnyIndicator = bunnyStatus.configured ? '☁️ Bunny Active' : '📁 Local Storage';
     document.getElementById('nq-bar-status').innerHTML = `🟢 ${sessionUser} &bull; <span title="Audio Storage Status">${bunnyIndicator}</span>`;
     updateActionButtons();
@@ -991,7 +1039,7 @@
   // =========================================================================
   function findNavigationMenus() {
     const menus = [];
-    const candidates = document.querySelectorAll('nav, ul.menu, ul.nav, .navbar-nav, #menu-main, [class*="menu-wrap"] ul, header ul');
+    const candidates = document.querySelectorAll('nav, ul.menu, ul.nav, .navbar-nav, #menu-main, #primary-menu, .nav-menu, [class*="menu-wrap"] ul, header ul, .menu-main-container ul, [role="navigation"] ul, .site-navigation ul, .uoc-navigation ul');
     candidates.forEach((ul, index) => {
       if (ul.closest('#nq-admin-bar') || ul.closest('#nq-inpage-modal')) return;
       const items = ul.querySelectorAll(':scope > li, :scope > a');
@@ -1541,6 +1589,38 @@
     };
   }
 
+  // Helper to extract clean document HTML without any editor artifacts
+  function getCleanHtml() {
+    const clone = document.documentElement.cloneNode(true);
+    clone.querySelectorAll('#nq-admin-bar, #nq-float-toolbar, #nq-inpage-modal, #nq-inpage-toast, #nq-inpage-styles, #nq-link-balloon, #nq-block-pill').forEach(el => el.remove());
+
+    // Clean any injected bookmarklet script tags (prevent leaking http://localhost into production files)
+    clone.querySelectorAll('script').forEach(s => {
+      const src = s.getAttribute('src') || '';
+      if (src.includes('inpage.js') && (src.includes('localhost') || src.includes('127.0.0.1') || src.includes('?t='))) {
+        s.remove();
+      }
+    });
+
+    // Restore any fixed headers styles
+    clone.querySelectorAll('[data-nq-orig-top]').forEach(h => {
+      if (h.dataset.nqOrigTop) {
+        h.style.top = h.dataset.nqOrigTop;
+      } else {
+        h.style.removeProperty('top');
+      }
+      h.removeAttribute('data-nq-orig-top');
+    });
+
+    clone.classList.remove('nq-has-admin-bar');
+    clone.querySelectorAll('[contenteditable]').forEach(el => {
+      el.removeAttribute('contenteditable');
+      el.classList.remove('nq-editable-hover', 'nq-editing-active');
+    });
+
+    return '<!doctype html>\n' + clone.outerHTML;
+  }
+
   function openPageHtmlModal() {
     const modalTitle = document.getElementById('nq-modal-title');
     const modalBody = document.getElementById('nq-modal-body');
@@ -1556,16 +1636,7 @@
       <button class="nq-btn nq-btn-primary" id="nq-full-save">Apply HTML to Page</button>
     `;
 
-    // Strip in-page elements before presenting
-    const clone = document.documentElement.cloneNode(true);
-    clone.querySelectorAll('#nq-admin-bar, #nq-float-toolbar, #nq-inpage-modal, #nq-inpage-toast, #nq-inpage-styles, #nq-link-balloon, #nq-block-pill').forEach(el => el.remove());
-    clone.classList.remove('nq-has-admin-bar');
-    clone.querySelectorAll('[contenteditable]').forEach(el => {
-      el.removeAttribute('contenteditable');
-      el.classList.remove('nq-editable-hover', 'nq-editing-active');
-    });
-
-    document.getElementById('nq-full-html-code').value = '<!doctype html>\n' + clone.outerHTML;
+    document.getElementById('nq-full-html-code').value = getCleanHtml();
     modal.style.display = 'flex';
 
     document.getElementById('nq-full-cancel').onclick = () => modal.style.display = 'none';
@@ -1653,19 +1724,7 @@
     showToast('Saving page changes to static HTML...', 'info');
 
     const relPath = getCurrentPageRelPath();
-
-    // Clone the document to clean injected toolbar & editor elements
-    const clone = document.documentElement.cloneNode(true);
-    const toRemove = clone.querySelectorAll('#nq-admin-bar, #nq-float-toolbar, #nq-inpage-modal, #nq-inpage-toast, #nq-inpage-styles, #nq-link-balloon, #nq-block-pill');
-    toRemove.forEach(el => el.remove());
-
-    clone.classList.remove('nq-has-admin-bar');
-    clone.querySelectorAll('[contenteditable]').forEach(el => {
-      el.removeAttribute('contenteditable');
-      el.classList.remove('nq-editable-hover', 'nq-editing-active');
-    });
-
-    const fullHtml = '<!doctype html>\n' + clone.outerHTML;
+    const fullHtml = getCleanHtml();
 
     try {
       const res = await apiFetch('/api/inpage/save', {

@@ -36,6 +36,9 @@ function makeRequest(options, postData = null, cookie = '') {
 async function runTests() {
   console.log('--- Starting Automated System Verification ---');
 
+  const dbFile = path.resolve(process.env.DATA_FILE || './data/db.json');
+  const originalDb = fs.existsSync(dbFile) ? fs.readFileSync(dbFile, 'utf8') : null;
+
   const { app } = require('./server');
   const testPort = 3001;
   const serverInstance = await new Promise((resolve) => {
@@ -80,7 +83,7 @@ async function runTests() {
 
   assert.strictEqual(me.statusCode, 200);
   assert.strictEqual(me.body.user, 'admin');
-  assert.strictEqual(me.body.version, 'v1.0.4');
+  assert.strictEqual(me.body.version, 'v1.0.5');
   console.log('✓ /api/me returned session and system version');
 
   // 4. Verify existing file conflict protection
@@ -214,8 +217,26 @@ async function runTests() {
   assert.strictEqual(bunnyConfig.body.config.storageZone, 'nurulquran-test');
   console.log('✓ Bunny CDN config update endpoint verified');
 
+  // 11. Verify Cloudflare Pages CORS headers
+  const corsTest = await makeRequest({
+    hostname: '127.0.0.1',
+    port: testPort,
+    path: '/api/me',
+    method: 'OPTIONS',
+    headers: {
+      'Origin': 'https://nqmainedit.pages.dev',
+      'Access-Control-Request-Method': 'POST'
+    }
+  });
+  assert.strictEqual(corsTest.statusCode, 204);
+  assert.strictEqual(corsTest.headers['access-control-allow-origin'], 'https://nqmainedit.pages.dev');
+  console.log('✓ Cloudflare Pages *.pages.dev CORS header verified');
+
   console.log('\n--- All System Tests Passed Successfully! ---');
   } finally {
+    if (originalDb && fs.existsSync(dbFile)) {
+      try { fs.writeFileSync(dbFile, originalDb, 'utf8'); } catch {}
+    }
     await new Promise(resolve => serverInstance.close(resolve));
   }
 }

@@ -818,10 +818,22 @@ function editPage(item = {}) {
 // 6. Audio Library View
 function audioView() {
   const used = id => S.lectures.filter(l => l.audioId === id).length;
+  const isBunny = S.me.bunnyConfigured;
 
   $('#main').innerHTML = `
     <div class="head">
       <h1>Audio Library</h1>
+    </div>
+    <div style="margin-bottom: 14px;">
+      ${isBunny ? `
+        <div style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:#15803d; background:#f0fdf4; padding:6px 12px; border-radius:6px; border:1px solid #bbf7d0;">
+          ☁️ <b>Bunny CDN Storage:</b> Active &bull; Audio files upload & stream worldwide via Bunny CDN
+        </div>
+      ` : `
+        <div style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:#92400e; background:#fef3c7; padding:6px 12px; border-radius:6px; border:1px solid #fde68a;">
+          📁 <b>Storage:</b> Local server storage &bull; <a href="#bookmarklet" style="color:#b45309; font-weight:600;">Connect Bunny CDN in Settings →</a>
+        </div>
+      `}
     </div>
     <div class="drop" id="adrop">
       <input type="file" id="afile" accept=".mp3,audio/mpeg" multiple hidden>
@@ -836,6 +848,7 @@ function audioView() {
             <th>Storage</th>
             <th>Duration</th>
             <th>Size</th>
+            <th>Listen</th>
             <th>Used in</th>
             <th></th>
           </tr>
@@ -847,6 +860,9 @@ function audioView() {
               <td>${a.provider === 'bunny' || (a.url && a.url.includes('b-cdn.net')) ? '<span class="pill ok">☁️ Bunny CDN</span>' : '<span class="pill">📁 Local</span>'}</td>
               <td>${fmtDur(a.duration)}</td>
               <td>${fmtSize(a.size)}</td>
+              <td>
+                <audio controls preload="none" src="${esc(a.url)}" style="height:28px; width:170px; vertical-align:middle;"></audio>
+              </td>
               <td>${used(a.id)} lecture(s)</td>
               <td class="r">
                 <button class="btn sm" data-copy="${esc(a.url)}">Copy link</button>

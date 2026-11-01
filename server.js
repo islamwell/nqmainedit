@@ -46,6 +46,7 @@ function isAllowedOrigin(origin) {
     const u = new URL(origin);
     if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return true;
     if (u.hostname === 'nurulquran.com' || u.hostname.endsWith('.nurulquran.com')) return true;
+    if (u.hostname === 'pages.dev' || u.hostname.endsWith('.pages.dev')) return true;
   } catch {}
   return false;
 }
@@ -128,7 +129,7 @@ app.get('/api/me', (req, res) => {
     user: req.session.user,
     siteUrl: process.env.SITE_URL || '',
     base: BASE,
-    version: 'v1.0.4',
+    version: 'v1.0.5',
     bunnyConfigured: Boolean(bunny.apiKey && bunny.storageZone),
     bunnyCdnUrl: bunny.cdnUrl,
   });
@@ -228,14 +229,19 @@ const upload = multer({
 });
 
 function looksLikeMp3(file) {
+  let fd = null;
   try {
     const b = Buffer.alloc(3);
-    const fd = fs.openSync(file, 'r');
-    fs.readSync(fd, b, 0, 3, 0);
-    fs.closeSync(fd);
+    fd = fs.openSync(file, 'r');
+    const bytesRead = fs.readSync(fd, b, 0, 3, 0);
+    if (bytesRead < 3) return false;
     return b.toString() === 'ID3' || (b[0] === 0xff && (b[1] & 0xe0) === 0xe0);
   } catch {
     return false;
+  } finally {
+    if (fd !== null) {
+      try { fs.closeSync(fd); } catch {}
+    }
   }
 }
 
@@ -386,6 +392,22 @@ app.delete('/api/audio/:id', h(async (req, res) => {
     }
   }
 
+  // Also clean up remote file from Bunny CDN storage if present
+  if (a.provider === 'bunny' && a.remotePath) {
+    const config = getBunnyConfig();
+    if (config.apiKey && config.storageZone) {
+      try {
+        const deleteUrl = `https://${config.storageHostname}/${config.storageZone}/${a.remotePath}`;
+        await fetch(deleteUrl, {
+          method: 'DELETE',
+          headers: { 'AccessKey': config.apiKey }
+        });
+      } catch (err) {
+        console.warn('Could not delete audio from Bunny CDN:', err.message);
+      }
+    }
+  }
+
   data.audio = data.audio.filter(x => x.id !== a.id);
   db.save(data);
   res.json({ ok: true });
@@ -531,11 +553,15 @@ app.post('/api/inpage/save', h(async (req, res) => {
   if (!relPath || !html) throw new Error('Path and HTML content are required');
 
   const safeRelPath = path.normalize(relPath).replace(/^(\.\.[\/\\])+/, '');
-  const targetFile = path.join(SITE_DIR, safeRelPath);
+  const targetFile = path.resolve(SITE_DIR, safeRelPath);
 
-  // Safety: Prevent writing outside SITE_DIR
-  if (!targetFile.startsWith(SITE_DIR)) {
+  // Safety: Prevent writing outside SITE_DIR and only allow HTML files
+  const relCheck = path.relative(SITE_DIR, targetFile);
+  if (relCheck.startsWith('..') || path.isAbsolute(relCheck)) {
     throw new Error('Invalid target path');
+  }
+  if (!/\.html?$/i.test(targetFile)) {
+    throw new Error('Only HTML files can be saved');
   }
 
   // Backup existing file if present
